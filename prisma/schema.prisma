@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ── NextAuth models ──
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  repos         Repository[]
+  docJobs       DocJob[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+// ── App models ──
+
+model Repository {
+  id            String   @id @default(cuid())
+  githubId      Int      @unique
+  name          String
+  fullName      String
+  description   String?
+  language      String?
+  stars         Int      @default(0)
+  forks         Int      @default(0)
+  size          Int      @default(0)
+  defaultBranch String   @default("main")
+  pushedAt      DateTime?
+  htmlUrl       String
+  isSelected    Boolean  @default(false)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  docNodes      DocNode[]
+  docJobs       DocJob[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model DocNode {
+  id             String   @id @default(cuid())
+  slug           String
+  type           String   // overview, architecture, modules, file-map, how-to-run, tech-debt, module-detail
+  title          String
+  content        String   // Markdown content
+  confidence     String?  // high, medium, low
+  classification String?  // observed, inferred, uncertain
+  evidence       String?  // JSON array of file paths used as evidence
+  repoId         String
+  repo           Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  linksFrom      DocLink[] @relation("fromNode")
+  linksTo        DocLink[] @relation("toNode")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  @@unique([repoId, slug])
+}
+
+model DocLink {
+  id         String  @id @default(cuid())
+  fromNodeId String
+  toNodeId   String
+  type       String  // extends, depends-on, details, relates-to
+  label      String?
+  fromNode   DocNode @relation("fromNode", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNode     DocNode @relation("toNode", fields: [toNodeId], references: [id], onDelete: Cascade)
+}
+
+model DocJob {
+  id        String   @id @default(cuid())
+  status    String   @default("pending") // pending, running, completed, failed
+  error     String?
+  repoId    String
+  repo      Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

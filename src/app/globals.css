@@ -1,0 +1,206 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════
+   DocMyShi — Neural Glassmorphism Design System
+   Adapted from Easy-Social's brain-navigation aesthetic
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  --background: #0a1024;
+  --foreground: #e0e6ed;
+  --accent: #0066ff;
+  --accent-glow: #5ac8f5;
+  --surface: #0d1530;
+  --surface-light: #111b3a;
+  --border: rgba(90, 200, 245, 0.12);
+  --muted: #94a3b8;
+  --brain-blue: #5ac8f5;
+  --brain-glow: rgba(90, 200, 245, 0.55);
+  --brain-dim: rgba(90, 200, 245, 0.25);
+  --brain-faint: rgba(90, 200, 245, 0.08);
+  --glass-bg: rgba(8, 14, 36, 0.75);
+  --glass-border: rgba(90, 200, 245, 0.12);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-glow: var(--accent-glow);
+  --color-surface: var(--surface);
+  --color-surface-light: var(--surface-light);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(90, 200, 245, 0.15) transparent;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* ── Glow effects ── */
+.glow-text {
+  text-shadow: 0 0 20px rgba(0, 102, 255, 0.5), 0 0 40px rgba(0, 102, 255, 0.3);
+}
+
+.glow-box {
+  box-shadow: 0 0 15px rgba(0, 102, 255, 0.15), 0 0 30px rgba(0, 102, 255, 0.05);
+}
+
+.glow-border {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(0, 102, 255, 0.2), inset 0 0 10px rgba(0, 102, 255, 0.05);
+}
+
+/* ── Animated background gradient (ES pattern) ── */
+.neural-bg {
+  background: linear-gradient(135deg, #0a1024, #0d1530, #0066ff, #0d1530, #0a1024);
+  background-size: 400% 400%;
+  animation: bgShift 12s ease-in-out infinite;
+}
+
+@keyframes bgShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── Glass shapes ── */
+.glass-shape {
+  position: absolute;
+  border: 1.5px solid rgba(0, 102, 255, 0.25);
+  background: rgba(0, 102, 255, 0.06);
+  box-shadow:
+    0 0 15px rgba(0, 102, 255, 0.3),
+    0 0 40px rgba(0, 102, 255, 0.18),
+    0 0 80px rgba(0, 102, 255, 0.08),
+    inset 0 0 20px rgba(0, 102, 255, 0.04);
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* ── Grid background ── */
+.grid-bg {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(rgba(0, 102, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 102, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Glass card ── */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow:
+    0 0 20px rgba(90, 200, 245, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Markdown styles ── */
+.markdown-body h1 { font-size: 1.75rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 1rem; color: var(--foreground); }
+.markdown-body h2 { font-size: 1.35rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.75rem; color: var(--foreground); }
+.markdown-body h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: var(--foreground); }
+.markdown-body p { margin-bottom: 0.75rem; line-height: 1.7; color: var(--muted); }
+.markdown-body ul, .markdown-body ol { margin-bottom: 0.75rem; padding-left: 1.5rem; color: var(--muted); }
+.markdown-body li { margin-bottom: 0.25rem; }
+.markdown-body code { background: var(--surface-light); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.85em; color: var(--accent-glow); }
+.markdown-body pre { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin-bottom: 1rem; }
+.markdown-body pre code { background: none; padding: 0; color: var(--foreground); }
+.markdown-body a { color: var(--accent-glow); text-decoration: underline; }
+.markdown-body table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+.markdown-body th, .markdown-body td { border: 1px solid var(--glass-border); padding: 0.5rem 0.75rem; text-align: left; }
+.markdown-body th { background: var(--surface-light); font-weight: 600; }
+.markdown-body blockquote { border-left: 3px solid var(--accent); padding-left: 1rem; margin-bottom: 1rem; color: var(--muted); }
+.markdown-body strong { color: var(--foreground); font-weight: 600; }
+.markdown-body hr { border: none; border-top: 1px solid var(--glass-border); margin: 1.5rem 0; }
+
+/* ── Animations ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes drift1 {
+  0% { transform: translate(-10%, -15%) rotate(0deg); }
+  50% { transform: translate(40%, 60%) rotate(30deg); }
+  100% { transform: translate(-10%, -15%) rotate(0deg); }
+}
+@keyframes drift2 {
+  0% { transform: translate(10%, -20%) rotate(45deg); }
+  50% { transform: translate(-50%, 70%) rotate(90deg); }
+  100% { transform: translate(10%, -20%) rotate(45deg); }
+}
+@keyframes drift3 {
+  0% { transform: translate(0, -30%) rotate(0deg); }
+  50% { transform: translate(-30%, 85%) rotate(-20deg); }
+  100% { transform: translate(0, -30%) rotate(0deg); }
+}
+@keyframes drift4 {
+  0% { transform: translate(0, -10%) rotate(12deg); }
+  50% { transform: translate(20%, 95%) rotate(60deg); }
+  100% { transform: translate(0, -10%) rotate(12deg); }
+}
+@keyframes drift5 {
+  0% { transform: translate(-5%, 20%) rotate(-8deg); }
+  50% { transform: translate(30%, -75%) rotate(15deg); }
+  100% { transform: translate(-5%, 20%) rotate(-8deg); }
+}
+@keyframes drift6 {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-40%, -110%) rotate(45deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.glass-shape-1 { width: 300px; height: 300px; border-radius: 50%; filter: blur(2px); animation: drift1 26s ease-in-out infinite; }
+.glass-shape-2 { width: 220px; height: 220px; border-radius: 36px; filter: blur(1.5px); animation: drift2 30s ease-in-out infinite; }
+.glass-shape-3 { width: 170px; height: 170px; border-radius: 50%; filter: blur(3px); animation: drift3 22s ease-in-out infinite; animation-delay: -8s; }
+.glass-shape-4 { width: 110px; height: 110px; border-radius: 22px; filter: blur(1px); animation: drift4 18s ease-in-out infinite; animation-delay: -4s; }
+.glass-shape-5 { width: 250px; height: 190px; border-radius: 44px; filter: blur(2.5px); animation: drift5 34s ease-in-out infinite; animation-delay: -12s; }
+.glass-shape-6 { width: 85px; height: 85px; border-radius: 50%; filter: blur(1px); animation: drift6 15s ease-in-out infinite; animation-delay: -6s;
+  border-color: rgba(0, 102, 255, 0.4);
+  box-shadow: 0 0 20px rgba(0, 102, 255, 0.4), 0 0 50px rgba(0, 102, 255, 0.2), 0 0 80px rgba(0, 102, 255, 0.1);
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 102, 255, 0.06) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
