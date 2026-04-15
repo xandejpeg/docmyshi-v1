@@ -116,6 +116,18 @@ export function IconRefresh(props: IconProps) {
   );
 }
 
+export function IconTrash(props: IconProps) {
+  return (
+    <svg {...defaults(props)}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
 /* ── Doc types (replacing emojis in doc-detail-view) ── */
 
 export function IconClipboard(props: IconProps) {
@@ -222,6 +234,34 @@ export function IconStar(props: IconProps) {
   return (
     <svg {...defaults(props)}>
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+export function IconGraph(props: IconProps) {
+  return (
+    <svg {...defaults(props)}>
+      <circle cx="6" cy="6" r="2.5" />
+      <circle cx="18" cy="6" r="2.5" />
+      <circle cx="6" cy="18" r="2.5" />
+      <circle cx="18" cy="18" r="2.5" />
+      <circle cx="12" cy="12" r="2.5" />
+      <line x1="8" y1="7" x2="10.5" y2="10.5" />
+      <line x1="13.5" y1="10.5" x2="16" y2="7" />
+      <line x1="8" y1="17" x2="10.5" y2="13.5" />
+      <line x1="13.5" y1="13.5" x2="16" y2="17" />
+    </svg>
+  );
+}
+
+export function IconDocument(props: IconProps) {
+  return (
+    <svg {...defaults(props)}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <line x1="10" y1="9" x2="8" y2="9" />
     </svg>
   );
 }

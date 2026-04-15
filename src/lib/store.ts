@@ -13,6 +13,7 @@ export interface RepoData {
   pushedAt: string | null;
   htmlUrl: string;
   isSelected: boolean;
+  docCount?: number;
 }
 
 export interface DocNodeData {

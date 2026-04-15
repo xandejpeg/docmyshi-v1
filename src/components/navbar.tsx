@@ -23,7 +23,7 @@ export function Navbar({ user, view, selectedRepo, onBack }: NavbarProps) {
             onClick={onBack}
             className="px-2 py-1 rounded-lg hover:bg-surface-light text-muted hover:text-foreground transition-colors text-sm flex items-center gap-1"
           >
-            <IconArrowLeft size={14} /> Back
+            <IconArrowLeft size={14} /> Voltar
           </button>
         )}
         <div className="flex items-center gap-2">
@@ -56,7 +56,7 @@ export function Navbar({ user, view, selectedRepo, onBack }: NavbarProps) {
           onClick={() => signOut({ callbackUrl: "/" })}
           className="px-3 py-1.5 rounded-lg text-muted hover:text-foreground hover:bg-surface-light transition-colors text-xs flex items-center gap-1"
         >
-          <IconLogOut size={12} /> Sign out
+          <IconLogOut size={12} /> Sair
         </button>
       </div>
     </nav>

@@ -13,10 +13,18 @@ export async function GET() {
   const dbRepos = await prisma.repository.findMany({
     where: { userId: session.user.id },
     orderBy: { pushedAt: "desc" },
+    include: { _count: { select: { docNodes: true } } },
   });
 
   if (dbRepos.length > 0) {
-    return NextResponse.json(dbRepos);
+    // Flatten _count into a docCount field
+    return NextResponse.json(
+      dbRepos.map((r) => ({
+        ...r,
+        docCount: r._count.docNodes,
+        _count: undefined,
+      }))
+    );
   }
 
   return NextResponse.json([]);

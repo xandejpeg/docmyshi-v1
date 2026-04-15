@@ -3,13 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAppStore, type RepoData } from "@/lib/store";
 import { Navbar } from "./navbar";
-import { RepoScene } from "./repo-scene";
 import { RepoSelector } from "./repo-selector";
-import { DocGraphView } from "./doc-graph-view";
 import { DocDetailView } from "./doc-detail-view";
-import { RepoList } from "./repo-list";
 import { GlassShapes } from "./glass-shapes";
-import { IconX } from "./icons";
+import { IconX, IconRefresh } from "./icons";
 
 interface DashboardClientProps {
   user: {
@@ -39,6 +36,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [genStatus, setGenStatus] = useState<string | null>(null);
 
   // Load repos on mount
   useEffect(() => {
@@ -53,7 +51,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
           }
         }
       } catch {
-        setError("Failed to load repositories");
+        setError("Falha ao carregar repositórios");
       } finally {
         setLoading(false);
       }
@@ -72,14 +70,40 @@ export function DashboardClient({ user }: DashboardClientProps) {
         setRepos(data);
         if (data.length > 0) setView("select");
       } else {
-        setError(data.error || "Sync failed");
+        setError(data.error || "Falha na sincronização");
       }
     } catch {
-      setError("Failed to sync repositories");
+      setError("Falha ao sincronizar repositórios");
     } finally {
       setSyncing(false);
     }
   }, [setRepos, setView]);
+
+  // Delete docs for a repo
+  const deleteDocs = useCallback(
+    async (repoId: string) => {
+      setError(null);
+      try {
+        const res = await fetch(`/api/repos/${repoId}/docs`, {
+          method: "DELETE",
+        });
+        const data = await res.json();
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
+        // Update repo docCount in store
+        setRepos(
+          repos.map((r: RepoData) =>
+            r.id === repoId ? { ...r, docCount: 0 } : r
+          )
+        );
+      } catch {
+        setError("Falha ao excluir documentação");
+      }
+    },
+    [repos, setRepos]
+  );
 
   // Generate docs for a repo
   const generateDocs = useCallback(
@@ -87,6 +111,11 @@ export function DashboardClient({ user }: DashboardClientProps) {
       setIsGenerating(true);
       setSelectedRepoId(repoId);
       setError(null);
+      const repoName =
+        repos.find((r: RepoData) => r.id === repoId)?.name || "repo";
+      setGenStatus(
+        `Gerando documentação para ${repoName}... Pode levar 1-2 minutos.`
+      );
       try {
         const res = await fetch(`/api/repos/${repoId}/docs`, {
           method: "POST",
@@ -97,14 +126,22 @@ export function DashboardClient({ user }: DashboardClientProps) {
           return;
         }
         setDocs(data.nodes || [], data.links || []);
-        setView("docs");
+        setActiveDocSlug("overview");
+        setView("doc-detail");
+        // Update docCount in store
+        setRepos(
+          repos.map((r: RepoData) =>
+            r.id === repoId ? { ...r, docCount: data.nodes?.length || 0 } : r
+          )
+        );
       } catch {
-        setError("Failed to generate documentation");
+        setError("Falha ao gerar documentação");
       } finally {
         setIsGenerating(false);
+        setGenStatus(null);
       }
     },
-    [setIsGenerating, setSelectedRepoId, setDocs, setView, setError]
+    [setIsGenerating, setSelectedRepoId, setDocs, setView, setError, repos, setRepos]
   );
 
   // Load existing docs for a repo
@@ -116,7 +153,8 @@ export function DashboardClient({ user }: DashboardClientProps) {
         const data = await res.json();
         if (data.nodes && data.nodes.length > 0) {
           setDocs(data.nodes, data.links || []);
-          setView("docs");
+          setActiveDocSlug(data.nodes[0]?.slug || "overview");
+          setView("doc-detail");
         } else {
           // No docs yet, generate them
           generateDocs(repoId);
@@ -131,12 +169,10 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const selectedRepo = repos.find((r: RepoData) => r.id === selectedRepoId);
 
   const handleBack = () => {
-    if (view === "doc-detail") {
-      setView("docs");
-      setActiveDocSlug(null);
-    } else if (view === "docs") {
+    if (view === "doc-detail" || view === "docs") {
       setView("select");
       setSelectedRepoId(null);
+      setActiveDocSlug(null);
       setDocs([], []);
     } else if (view === "select") {
       setView("repos");
@@ -165,94 +201,45 @@ export function DashboardClient({ user }: DashboardClientProps) {
         </div>
       )}
 
+      {genStatus && (
+        <div className="mx-4 mt-2 px-4 py-3 rounded-lg bg-accent/10 border border-accent/30 text-accent-glow text-sm flex items-center gap-3">
+          <span className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin flex-shrink-0" />
+          {genStatus}
+        </div>
+      )}
+
       <main className="flex-1 overflow-hidden relative">
-        {view === "repos" && (
-          <div className="h-full flex flex-col">
-            {/* 3D Scene */}
-            <div className="flex-1 relative">
-              {repos.length > 0 ? (
-                <RepoScene
-                  repos={repos}
-                  onSelectRepo={loadDocs}
-                  isGenerating={isGenerating}
-                />
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    {loading ? (
-                      <div className="text-muted">Loading repositories...</div>
-                    ) : (
-                      <>
-                        <p className="text-muted text-lg">
-                          No repositories loaded yet
-                        </p>
-                        <button
-                          onClick={async () => {
-                            await syncRepos();
-                            setView("select");
-                          }}
-                          disabled={syncing}
-                          className="px-6 py-3 rounded-xl bg-accent hover:bg-accent-glow text-white font-semibold transition-all disabled:opacity-50"
-                        >
-                          {syncing ? "Syncing..." : "Connect & Sync from GitHub"}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Repo list panel */}
-            {repos.length > 0 && (
-              <RepoList
-                repos={repos}
-                onSelectRepo={loadDocs}
-                onSync={syncRepos}
-                syncing={syncing}
-                isGenerating={isGenerating}
-              />
-            )}
-          </div>
-        )}
-
-        {view === "select" && (
+        {(view === "repos" || view === "select") && (
           <RepoSelector
             repos={repos}
             user={user}
             onConfirm={loadDocs}
+            onGenerate={generateDocs}
+            onDelete={deleteDocs}
             onSync={syncRepos}
             syncing={syncing}
             isGenerating={isGenerating}
           />
         )}
 
-        {view === "docs" && (
-          <DocGraphView
-            nodes={docNodes}
-            links={docLinks}
-            repoName={selectedRepo?.name || ""}
-            onSelectNode={(slug) => {
-              setActiveDocSlug(slug);
-              setView("doc-detail");
-            }}
-            onRegenerate={() =>
-              selectedRepoId && generateDocs(selectedRepoId)
-            }
-            isGenerating={isGenerating}
-          />
-        )}
-
-        {view === "doc-detail" && activeDocSlug && (
+        {(view === "docs" || view === "doc-detail") && activeDocSlug && (
           <DocDetailView
             nodes={docNodes}
             links={docLinks}
             activeSlug={activeDocSlug}
             onNavigate={(slug) => setActiveDocSlug(slug)}
             onBack={() => {
-              setView("docs");
+              setView("select");
+              setSelectedRepoId(null);
               setActiveDocSlug(null);
+              setDocs([], []);
             }}
+            onRegenerate={
+              selectedRepoId
+                ? () => generateDocs(selectedRepoId)
+                : undefined
+            }
+            isGenerating={isGenerating}
           />
         )}
       </main>

@@ -128,3 +128,27 @@ export async function POST(
     );
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ repoId: string }> }
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { repoId } = await params;
+
+  const repo = await prisma.repository.findUnique({ where: { id: repoId } });
+  if (!repo || repo.userId !== session.user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  await prisma.docLink.deleteMany({
+    where: { fromNode: { repoId } },
+  });
+  await prisma.docNode.deleteMany({ where: { repoId } });
+
+  return NextResponse.json({ ok: true });
+}

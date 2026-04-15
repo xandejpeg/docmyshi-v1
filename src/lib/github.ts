@@ -127,15 +127,15 @@ export function getKeyFiles(tree: GitHubTree): string[] {
   const files: string[] = [];
   const treeFiles = tree.tree.filter((t) => t.type === "blob");
 
-  // Add priority config files
+  // 1. Priority config files (README, package.json, etc.)
   for (const pf of PRIORITY_FILES) {
     const found = treeFiles.find(
       (f) => f.path.toLowerCase() === pf.toLowerCase() || f.path.toLowerCase().endsWith(`/${pf.toLowerCase()}`)
     );
-    if (found) files.push(found.path);
+    if (found && !files.includes(found.path)) files.push(found.path);
   }
 
-  // Add entry point files (index/main/app at root or src/)
+  // 2. Entry point files (index/main/app at root or src/)
   const entryPatterns = [/^(src\/)?(index|main|app|server)\.(ts|tsx|js|jsx|py|rs|go)$/i];
   for (const f of treeFiles) {
     if (entryPatterns.some((p) => p.test(f.path)) && !files.includes(f.path)) {
@@ -143,7 +143,7 @@ export function getKeyFiles(tree: GitHubTree): string[] {
     }
   }
 
-  // Add route/page files (first 10)
+  // 3. Route/page/layout files (Next.js, etc.)
   const routeFiles = treeFiles
     .filter((f) => {
       const ext = f.path.substring(f.path.lastIndexOf("."));
@@ -154,12 +154,69 @@ export function getKeyFiles(tree: GitHubTree): string[] {
         f.path.includes("/api/")
       );
     })
-    .slice(0, 10);
+    .slice(0, 15);
   for (const f of routeFiles) {
     if (!files.includes(f.path)) files.push(f.path);
   }
 
-  return files.slice(0, 25); // Cap at 25 files to manage token cost
+  // 4. Lib/utils/services files — the actual business logic
+  const libFiles = treeFiles
+    .filter((f) => {
+      const ext = f.path.substring(f.path.lastIndexOf("."));
+      if (!CODE_EXTENSIONS.has(ext)) return false;
+      const p = f.path.toLowerCase();
+      return (
+        p.includes("/lib/") ||
+        p.includes("/utils/") ||
+        p.includes("/services/") ||
+        p.includes("/hooks/") ||
+        p.includes("/helpers/") ||
+        p.includes("/core/") ||
+        p.includes("/middleware") ||
+        p.includes("/auth") ||
+        p.includes("/store") ||
+        p.includes("/config/") ||
+        p.includes("/db/") ||
+        p.includes("/models/") ||
+        p.includes("/schemas/") ||
+        p.includes("/types/")
+      );
+    })
+    .slice(0, 20);
+  for (const f of libFiles) {
+    if (!files.includes(f.path)) files.push(f.path);
+  }
+
+  // 5. Component files — sample the most important ones
+  const componentFiles = treeFiles
+    .filter((f) => {
+      const ext = f.path.substring(f.path.lastIndexOf("."));
+      if (!CODE_EXTENSIONS.has(ext)) return false;
+      const p = f.path.toLowerCase();
+      return (
+        p.includes("/components/") ||
+        p.includes("/views/") ||
+        p.includes("/pages/") ||
+        p.includes("/screens/")
+      );
+    })
+    .slice(0, 10);
+  for (const f of componentFiles) {
+    if (!files.includes(f.path)) files.push(f.path);
+  }
+
+  // 6. Test files — just a few to understand test patterns
+  const testFiles = treeFiles
+    .filter((f) => {
+      const p = f.path.toLowerCase();
+      return p.includes(".test.") || p.includes(".spec.") || p.includes("__tests__");
+    })
+    .slice(0, 3);
+  for (const f of testFiles) {
+    if (!files.includes(f.path)) files.push(f.path);
+  }
+
+  return files.slice(0, 50); // Increased from 25 to 50 for deeper analysis
 }
 
 export function buildTreeSummary(tree: GitHubTree): string {
