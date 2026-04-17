@@ -2,7 +2,7 @@
   "name": "docmyshi-bridge",
   "displayName": "DocMyShi Bridge",
   "description": "Bridges DocMyShi web app to VS Code Copilot for free AI doc generation",
-  "version": "0.2.0",
+  "version": "0.4.1",
   "publisher": "xandejpeg",
   "engines": {
     "vscode": "^1.90.0"

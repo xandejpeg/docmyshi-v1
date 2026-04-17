@@ -47,6 +47,9 @@ function startServer() {
     server = null;
   });
 
+  server.timeout = 600000; // 10 min
+  server.keepAliveTimeout = 600000;
+
   server.listen(PORT, "127.0.0.1", () => {
     log(`Bridge server listening on http://127.0.0.1:${PORT}`);
     vscode.window.showInformationMessage(`DocMyShi Bridge running on port ${PORT}`);
@@ -74,18 +77,22 @@ async function handleRequest(req, res) {
   }
 
   if (req.method === "GET" && req.url === "/api/health") {
-    const models = await getAvailableModels();
+    const allModels = await getAllModels();
+    const best = await getBestModel();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({
       status: "ok",
       engine: "vscode-copilot",
-      version: "0.3.0-ptbr-7docs",
-      models: models.map((m) => m.id),
+      version: "0.4.1-timeout-fix",
+      allModels: allModels.map((m) => ({ id: m.id, family: m.family, maxInput: m.maxInputTokens })),
+      selectedModel: best ? { id: best.id, family: best.family, maxInput: best.maxInputTokens } : null,
     }));
     return;
   }
 
   if (req.method === "POST" && req.url === "/api/generate-docs") {
+    // 10 min timeout for long Claude Opus generations
+    req.socket.setTimeout(600000);
     try {
       const body = await readBody(req);
       const input = JSON.parse(body);
@@ -119,31 +126,54 @@ function readBody(req) {
 
 // ── Copilot LM Integration ──
 
-async function getAvailableModels() {
+async function getAllModels() {
   try {
-    // Try GPT-4o family first (best for code analysis)
-    let models = await vscode.lm.selectChatModels({ family: "gpt-4o" });
-    if (models.length) return models;
-
-    // Try Claude family
-    models = await vscode.lm.selectChatModels({ family: "claude-3.5-sonnet" });
-    if (models.length) return models;
-
-    // Any available model
     return await vscode.lm.selectChatModels();
   } catch {
     return [];
   }
 }
 
+async function getBestModel() {
+  try {
+    const all = await vscode.lm.selectChatModels();
+    if (!all.length) return null;
+
+    // Log all available models
+    log(`Modelos disponíveis (${all.length}):`);
+    for (const m of all) {
+      log(`  - ${m.id} (family: ${m.family}, maxInput: ${m.maxInputTokens})`);
+    }
+
+    // Priority: Claude Opus > Claude Sonnet > GPT-4o > any
+    const priorities = [
+      (m) => m.family?.includes("claude") && (m.id?.includes("opus") || m.family?.includes("opus")),
+      (m) => m.id?.toLowerCase().includes("opus"),
+      (m) => m.family?.includes("claude") && (m.id?.includes("sonnet") || m.family?.includes("sonnet")),
+      (m) => m.id?.toLowerCase().includes("claude"),
+      (m) => m.family?.includes("gpt-4o") || m.id?.includes("gpt-4o"),
+      (m) => m.family?.includes("gpt-4") || m.id?.includes("gpt-4"),
+    ];
+
+    for (const test of priorities) {
+      const match = all.find(test);
+      if (match) return match;
+    }
+
+    // Fallback: pick the one with highest maxInputTokens
+    return all.sort((a, b) => (b.maxInputTokens || 0) - (a.maxInputTokens || 0))[0];
+  } catch {
+    return null;
+  }
+}
+
 async function generateWithCopilot(input) {
-  const models = await getAvailableModels();
-  if (!models.length) {
+  const model = await getBestModel();
+  if (!model) {
     throw new Error("Nenhum modelo Copilot disponível. Verifique se o GitHub Copilot está instalado e logado.");
   }
 
-  const model = models[0];
-  log(`Usando modelo: ${model.id} (max input: ${model.maxInputTokens})`);
+  log(`Usando modelo: ${model.id} (family: ${model.family}, max input: ${model.maxInputTokens})`);
 
   const docTypes = [
     {
@@ -309,8 +339,8 @@ function buildContext(input) {
   const keyFilesText = fileEntries
     .map(([path, content]) => {
       const truncated =
-        content.length > 5000
-          ? content.slice(0, 5000) + "\n... (truncado)"
+        content.length > 12000
+          ? content.slice(0, 12000) + "\n... (truncado)"
           : content;
       return `### ${path}\n\`\`\`\n${truncated}\n\`\`\``;
     })

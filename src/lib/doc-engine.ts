@@ -49,7 +49,7 @@ export async function generateDocs(input: DocGenerationInput): Promise<DocGenera
   for (const path of keyFilePaths) {
     try {
       const content = await fetchFileContent(input.accessToken, owner, repo, path, input.defaultBranch);
-      keyFiles[path] = content.length > 6000 ? content.slice(0, 6000) + "\n... (truncado)" : content;
+      keyFiles[path] = content.length > 12000 ? content.slice(0, 12000) + "\n... (truncado)" : content;
       totalChars += keyFiles[path].length;
       console.log(`[DocMyShi]   ✓ ${path} (${content.length} chars)`);
     } catch {
@@ -236,14 +236,23 @@ async function tryVSCodeBridge(
 ): Promise<DocGenerationResult | null> {
   try {
     const health = await fetch(`${BRIDGE_URL}/api/health`, {
-      signal: AbortSignal.timeout(1000),
+      signal: AbortSignal.timeout(5000),
     });
-    if (!health.ok) return null;
-  } catch {
+    if (!health.ok) {
+      console.error("[DocMyShi] Bridge health check falhou:", health.status);
+      return null;
+    }
+    const healthData = await health.json();
+    console.log(`[DocMyShi] Bridge v${healthData.version} — modelo: ${healthData.selectedModel?.id || "nenhum"}`);
+  } catch (err) {
+    console.error("[DocMyShi] Bridge não acessível:", err instanceof Error ? err.message : err);
     return null;
   }
 
   try {
+    console.log(`[DocMyShi] Enviando para bridge... (timeout 10min, Claude Opus gera 7 docs detalhados)`);
+    const startTime = Date.now();
+
     const res = await fetch(`${BRIDGE_URL}/api/generate-docs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -255,22 +264,26 @@ async function tryVSCodeBridge(
         treeSummary,
         keyFiles,
       }),
-      signal: AbortSignal.timeout(300000),
+      signal: AbortSignal.timeout(600000), // 10 min — Claude Opus gera 7 docs detalhados
     });
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
     if (!res.ok) {
       const err = await res.text();
-      console.error("[DocMyShi] Bridge error:", err);
+      console.error(`[DocMyShi] Bridge retornou ${res.status} após ${elapsed}s:`, err);
       return null;
     }
 
     const result = await res.json();
     if (result.docs && result.docs.length > 0) {
+      console.log(`[DocMyShi] Bridge OK em ${elapsed}s — ${result.docs.length} docs gerados`);
       return result as DocGenerationResult;
     }
+    console.error(`[DocMyShi] Bridge retornou 0 docs após ${elapsed}s`);
     return null;
   } catch (err) {
-    console.error("[DocMyShi] Bridge failed:", err);
+    console.error("[DocMyShi] Bridge falhou:", err instanceof Error ? err.message : err);
     return null;
   }
 }
